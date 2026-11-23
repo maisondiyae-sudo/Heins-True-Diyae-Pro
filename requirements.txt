@@ -1,0 +1,17 @@
+# Heins True Diyae Pro 2.2.2 (Free & Open Edition) - desktop (Windows / macOS). Python 3.11 to 3.13 recommended.
+# To build the standalone app, also: pip install pyinstaller   (see build_windows.bat / build_macos.sh)
+# 6.7.2+: fixes a Qt bug where switching audio files during playback could freeze the player (A/B)
+PySide6>=6.7.2
+# Audio playback (PortAudio; the Windows / macOS wheels include the PortAudio library)
+sounddevice>=0.5.1
+numpy>=1.26
+scipy>=1.11
+librosa>=0.10.2
+soundfile>=0.12.1
+pedalboard>=0.9.8
+pyloudnorm>=0.1.1
+matplotlib>=3.8
+# Cover art (square crop, resize) and the vertical social-media video frame
+Pillow>=10.0
+# Ready-made FFmpeg binary for Windows / macOS (used when FFmpeg is not installed)
+imageio-ffmpeg>=0.5
