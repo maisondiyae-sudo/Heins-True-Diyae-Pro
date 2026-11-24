@@ -1,5 +1,5 @@
 # Heins True Diyae Pro 2.2.2 - Free & Open Edition (Windows / macOS)
-
+<img width="1917" height="1078" alt="Capture d&#39;écran 2026-11-24 021259" src="https://github.com/user-attachments/assets/b05278af-4bb8-435b-800c-56c429075b47" />
 *by mo7amed illumyn diyae — © 2026 mo7amed illumyn diyae*
 
 Anti-Parasite Filter, mastering (presets + advanced settings, batch, A/B with
