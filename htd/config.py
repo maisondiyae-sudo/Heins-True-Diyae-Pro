@@ -95,6 +95,8 @@ def _purge_old_sessions(root: Path, max_age_s: float = 24 * 3600) -> None:
 
 def _session_owner_alive(name: str) -> bool:
     """Whether the PID in ``session-<pid>-<time>`` is still running."""
+    if os.name == "nt":  # Signal 0 is CTRL_C_EVENT on Windows, not an existence probe.
+        return True
     try:
         pid = int(name.split("-")[1])
     except (IndexError, ValueError):

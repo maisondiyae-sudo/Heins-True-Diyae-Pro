@@ -93,6 +93,12 @@ def _worker_loop(in_q, out_q, cancel_evt) -> None:  # pragma: no cover - runs in
         import numpy  # noqa: F401  (warm the heavy imports once)
     except Exception:  # noqa: BLE001
         pass
+    try:
+        from .ffmpeg_tools import install_resolver
+
+        install_resolver()  # Spawned children do not inherit the parent's resolver.
+    except Exception:  # noqa: BLE001 - normal PATH lookup remains available
+        pass
     while True:
         try:
             message = in_q.get()
