@@ -81,11 +81,28 @@ def cleanup_session() -> None:
 
 
 def _purge_old_sessions(root: Path, max_age_s: float = 24 * 3600) -> None:
-    """Remove leftovers of sessions that crashed more than a day ago."""
+    """Remove leftovers of sessions that crashed more than a day ago, and of sessions
+    whose process is gone (a force-killed instance leaves its render cache behind)."""
     now = time.time()
     for child in root.glob("session-*"):
         try:
-            if now - child.stat().st_mtime > max_age_s:
+            stale = now - child.stat().st_mtime > max_age_s
+            if stale or not _session_owner_alive(child.name):
                 shutil.rmtree(child, ignore_errors=True)
         except OSError:
             pass
+
+
+def _session_owner_alive(name: str) -> bool:
+    """Whether the PID in ``session-<pid>-<time>`` is still running."""
+    try:
+        pid = int(name.split("-")[1])
+    except (IndexError, ValueError):
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:                 # exists, owned by someone else
+        return True
+    return True
