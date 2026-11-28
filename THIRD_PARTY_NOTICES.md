@@ -1,6 +1,6 @@
 # Third-party software
 
-Heins True Diyae Pro 2.2.2 (Free & Open Edition) — © 2026 mo7amed illumyn diyae —
+Heins True Diyae Pro 2.2.3 (Free & Open Edition) — © 2026 mo7amed illumyn diyae —
 is built on these open-source projects. Their licences travel with the standalone
 app (PyInstaller copies each package's own licence files where the package ships
 them).

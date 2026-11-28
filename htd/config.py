@@ -17,7 +17,7 @@ from pathlib import Path
 APP_NAME = "Heins True Diyae Pro"
 ORG_NAME = "Heins True Diyae"
 APP_ID = "HeinsTrueDiyae.Pro"          # Windows taskbar grouping / future installer id
-APP_VERSION = "2.2.2"
+APP_VERSION = "2.2.3"
 APP_EDITION = "Free & Open Edition"      # free for everyone, every feature unlocked
 APP_TAGLINE = "Anti-Parasite Filter, mastering and conversion"
 APP_AUTHOR = "mo7amed illumyn diyae"     # author signature (header, About, README, LICENSE)

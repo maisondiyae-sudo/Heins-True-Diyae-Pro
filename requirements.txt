@@ -1,4 +1,4 @@
-# Heins True Diyae Pro 2.2.2 (Free & Open Edition) - desktop (Windows / macOS). Python 3.11 to 3.13 recommended.
+# Heins True Diyae Pro 2.2.3 (Free & Open Edition) - desktop (Windows / macOS / Linux). Python 3.11 to 3.13 recommended.
 # To build the standalone app, also: pip install pyinstaller   (see build_windows.bat / build_macos.sh)
 # 6.7.2+: fixes a Qt bug where switching audio files during playback could freeze the player (A/B)
 PySide6>=6.7.2

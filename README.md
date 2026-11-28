@@ -1,4 +1,4 @@
-# Heins True Diyae Pro 2.2.2 - Free & Open Edition (Windows / macOS)
+# Heins True Diyae Pro 2.2.3 - Free & Open Edition (Windows / macOS / Linux)
 *by mo7amed illumyn diyae — © 2026 mo7amed illumyn diyae*
 
 <p align="center">
@@ -15,6 +15,50 @@ background threads (the mascot dances while it works). The mastering engine
 (`htd/engine/core.py`) is unchanged since 1.0; since 2.2.2 the Anti-Parasite Filter
 adds an analog tolerance per track (below). With `analog_seed=None` the engine
 still renders bit-identical v1.0 masters.
+
+## Download (no installation of Python needed)
+
+Ready-to-use apps are on the **[Releases page](../../releases/latest)**:
+
+| Your computer | File |
+|---|---|
+| Windows 10 / 11 (64-bit) | `HeinsTrueDiyaePro-<version>-Windows.zip` |
+| Mac with an Apple chip (M1, M2, M3, M4...) | `HeinsTrueDiyaePro-<version>-macOS-AppleSilicon.dmg` |
+| Mac with an Intel processor | `HeinsTrueDiyaePro-<version>-macOS-Intel.dmg` |
+| Linux (x86_64) | `HeinsTrueDiyaePro-<version>-x86_64.AppImage` |
+
+The Mac versions need macOS 14 (Sonoma) or later. FFmpeg is included. The app is
+free and not signed with a paid Apple / Microsoft certificate, so the system asks for
+confirmation the first time only:
+
+* **Windows**: right-click the .zip > *Extract All*, then run `HeinsTrueDiyaePro.exe`
+  from the extracted folder. If SmartScreen says "Windows protected your PC", click
+  *More info* > *Run anyway*.
+* **macOS**: open the .dmg and drag the app onto *Applications*. Open it once (macOS
+  blocks it), then *System Settings > Privacy & Security* > *Open Anyway* next to
+  Heins True Diyae Pro. Since macOS 15 (Sequoia), right-click > Open no longer does
+  this. In Terminal, this also works:
+  `xattr -dr com.apple.quarantine "/Applications/Heins True Diyae Pro.app"`.
+* **Linux**: `chmod +x HeinsTrueDiyaePro-*.AppImage` (or *Properties > Allow
+  executing as program*), then run it.
+
+## New in 2.2.3 (Linux, ready-made downloads, steadier rendering)
+
+* **Linux version**: a single-file AppImage (`bash build_linux.sh`), with PortAudio
+  and the xcb libraries Qt needs bundled in. Contributed by
+  [logicalor](https://github.com/logicalor) (PR #2), thank you!
+* **Ready-made downloads for everyone**: Windows (.zip), Mac Apple Silicon and Mac
+  Intel (.dmg), Linux (.AppImage) are now built automatically on GitHub and published
+  on the Releases page (see *Download* above), no Python needed. On a Mac,
+  `build_macos.sh` now also makes the drag-and-drop .dmg.
+* **No more frozen batch**: if the background render process crashed or stopped
+  responding, the app could freeze for good. It now detects it (crash at once, or no
+  progress for 300 s) and finishes the track in the app itself. The render process
+  also starts cleanly ("spawn") on Linux and macOS, as on Windows, and is started at
+  launch so the first render is quicker. (PR #2)
+* The render process now finds the FFmpeg bundled with the app even when it is not
+  on `PATH`, and leftover temporary renders of a force-closed session are removed at
+  the next launch (Linux / macOS; Windows keeps the 24 h rule).
 
 ## New in 2.2.2 (analog console channel)
 
@@ -276,9 +320,11 @@ Put your logo in `assets/logo.png` and your mascot GIF in `assets/mascot_dance.g
 
 ## Build the standalone app (PyInstaller)
 
-Build on Windows for Windows and on macOS for macOS (PyInstaller does not
-cross-compile). One command does everything (virtual environment, packages,
-build):
+Build on each system for that system: Windows for Windows, macOS for macOS (Apple
+Silicon for Apple Silicon, Intel for Intel), Linux for Linux. PyInstaller does not
+cross-compile. One command does everything (virtual environment, packages, build).
+No Mac or Linux machine? GitHub builds all of them for you: see *Automatic builds*
+below.
 
 **Windows** - double-click `build_windows.bat`, or in a terminal:
 
@@ -291,6 +337,10 @@ build_windows.bat
 ```bash
 bash build_macos.sh
 ```
+
+Result: `dist/Heins True Diyae Pro.app` and a drag-and-drop installer
+`dist/HeinsTrueDiyaePro-<version>-macOS-AppleSilicon.dmg` (or `-Intel.dmg` on an
+Intel Mac). The script picks a Python 3.11-3.13 (or set `PYTHON=/path/to/python3.12`).
 
 **Linux (AppImage)**
 
@@ -320,8 +370,28 @@ Linux `dist/HeinsTrueDiyaePro-<version>-x86_64.AppImage`.
 The `assets/` folder (logo, mascot), the fallback FFmpeg and the third-party
 notices are bundled. Icon: `assets/logo.ico` / `assets/logo.icns`, or
 `assets/logo.png` converted automatically. On macOS, `build_macos.sh` signs the
-app ad hoc; on other Macs open it the first time with right-click > Open (or sign
-and notarize it with an Apple Developer ID).
+app ad hoc; on other Macs the first launch goes through *System Settings > Privacy &
+Security > Open Anyway* (see *Download* above), unless you sign and notarize it with
+an Apple Developer ID.
+
+## Automatic builds (GitHub Actions)
+
+`.github/workflows/release.yml` builds the four downloads on GitHub's machines
+(Windows, Apple Silicon Mac, Intel Mac, Linux) and runs the tests:
+
+* **Try a build**: *Actions* tab > *Build & Release* > *Run workflow* (leave
+  *Publish* unticked). When it is done (about 20-30 minutes), the files are at the
+  bottom of the run page under *Artifacts* (kept 14 days).
+* **Publish a version**: the same, with *Publish a release* ticked. After the tests and
+  the builds, the release `v<APP_VERSION>` (from `htd/config.py`) is created with the
+  four files and the text of `packaging/release-notes.md`. If that version is already
+  released, the run stops at once: raise `APP_VERSION` first.
+* Git users can also push a tag `v<APP_VERSION>` (`git tag v2.2.3 && git push origin
+  v2.2.3`), or create a release with that tag on the GitHub page: the files are built
+  and attached to it. A tag that does not match `APP_VERSION` stops the build.
+
+The Linux AppImage is built inside Ubuntu 22.04 so it runs on that and newer
+distributions (Ubuntu 22.04+, Debian 12+, Fedora 36+...).
 
 ## Licence
 
@@ -390,6 +460,8 @@ build_windows.bat            one-command Windows build
 build_macos.sh               one-command macOS build
 build_linux.sh               one-command Linux AppImage build
 packaging/linux/             AppRun + .desktop entry for the AppImage
+packaging/release-notes.md   text of the GitHub release page (download + first launch)
+.github/workflows/release.yml  automatic Windows / macOS / Linux builds and releases
 HeinsTrueDiyaePro.spec       PyInstaller recipe
 THIRD_PARTY_NOTICES.md       open-source components, licences, FFmpeg source offer
 LICENSE                      GNU GPL-3.0 (full text)
