@@ -1,0 +1,28 @@
+#!/bin/sh
+# Heins True Diyae Pro - AppImage entry point.
+#
+# Layout of the AppDir:
+#   AppRun                        this script
+#   usr/HeinsTrueDiyaePro         PyInstaller executable
+#   usr/_internal/                PyInstaller payload (assets, Qt, Python)
+#   usr/lib/                      extra libraries bundled for portability
+#                                 (libportaudio + the xcb pieces Qt's xcb plugin dlopens)
+#
+# PyInstaller's bootloader points the process at usr/_internal itself, so this
+# only has to add usr/lib in front for the extra libraries.
+
+set -e
+
+HERE=$(dirname "$(readlink -f "$0")")
+
+# Bundled portability libraries first, the host's own libraries after them.
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# So the .desktop file's `Exec=HeinsTrueDiyaePro` resolves if the AppDir is
+# extracted or installed flat rather than run as an AppImage.
+export PATH="$HERE/usr:$PATH"
+
+# Audio: PortAudio talks to the host through ALSA / PipeWire / PulseAudio.
+# Nothing to configure; documented in README.md.
+
+exec "$HERE/usr/HeinsTrueDiyaePro" "$@"

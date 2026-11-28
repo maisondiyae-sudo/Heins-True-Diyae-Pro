@@ -11,6 +11,17 @@ from __future__ import annotations
 
 import multiprocessing
 import sys
+import threading
+
+
+def _warm_render_pool() -> None:
+    """Import the engine lazily and start the warm render child (see render_service)."""
+    try:
+        from htd.engine import render_service
+
+        render_service.prestart_pool()
+    except Exception:  # noqa: BLE001 - warming up must never break the launch
+        pass
 
 
 def main() -> int:
@@ -65,6 +76,11 @@ def main() -> int:
     window = MainWindow(AppContext(ffmpeg, settings))
     window.show()
     splash.finish(window)
+
+    # Warm the off-GUI render child while the app sits idle, so the first render does
+    # not pay its start-up time. Imported here (not at module level) to keep the splash
+    # immediate; harmless if the child cannot start.
+    threading.Thread(target=_warm_render_pool, name="htd-warm", daemon=True).start()
 
     class _ProjectOpener(QObject):
         """macOS: a .htd double-clicked in the Finder arrives as a FileOpen event."""

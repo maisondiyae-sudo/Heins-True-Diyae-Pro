@@ -21,8 +21,8 @@ from __future__ import annotations
 import multiprocessing as mp
 import os
 import queue
-import sys
 import threading
+import time
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
@@ -93,6 +93,12 @@ def _worker_loop(in_q, out_q, cancel_evt) -> None:  # pragma: no cover - runs in
         import numpy  # noqa: F401  (warm the heavy imports once)
     except Exception:  # noqa: BLE001
         pass
+    try:
+        from .ffmpeg_tools import install_resolver
+
+        install_resolver()  # Spawned children do not inherit the parent's resolver.
+    except Exception:  # noqa: BLE001 - normal PATH lookup remains available
+        pass
     while True:
         try:
             message = in_q.get()
@@ -138,18 +144,42 @@ class RenderPool:
     """A single warm child process. Thread-safe for one caller at a time (the worker thread)."""
 
     START_TIMEOUT_S = 90.0
+    # A job that sends nothing for this long is considered wedged (overridable for tests).
+    STALL_TIMEOUT_S = 300.0
 
     def __init__(self) -> None:
-        self._ctx = mp.get_context("spawn" if sys.platform == "win32" else "fork")
+        # spawn everywhere, not only on Windows: on Linux ``fork`` copies a process
+        # that already holds Qt and PortAudio threads, and a mutex held by a thread
+        # that does not exist in the child deadlocks it (the parent then waits
+        # forever). Re-executing gives the child a clean single-threaded start;
+        # HTD_RENDER_FORK=1 brings the old behaviour back for troubleshooting.
+        method = "fork" if os.environ.get("HTD_RENDER_FORK", "") == "1" else "spawn"
+        self._ctx = mp.get_context(method)
         self._proc = None
         self._in_q = None
         self._out_q = None
         self._cancel_evt = None
-        self._lock = threading.Lock()
+        # RLock, not Lock: run() holds it and calls shutdown() (which takes it again) on
+        # every failure path. With a plain Lock that re-entry deadlocks the parent, so a
+        # dead child froze the whole app instead of falling back to inline rendering.
+        self._lock = threading.RLock()
 
     @property
     def alive(self) -> bool:
         return self._proc is not None and self._proc.is_alive()
+
+    @property
+    def stall_timeout(self) -> float:
+        try:
+            return max(5.0, float(os.environ.get("HTD_RENDER_STALL_S", self.STALL_TIMEOUT_S)))
+        except (TypeError, ValueError):
+            return self.STALL_TIMEOUT_S
+
+    def start(self) -> None:
+        """Start the warm child (no job). Safe to call before Qt exists."""
+        with self._lock:
+            if not self.alive:
+                self._start()
 
     def _start(self) -> None:
         self._in_q = self._ctx.Queue()
@@ -179,6 +209,7 @@ class RenderPool:
             except Exception as exc:  # noqa: BLE001
                 self.shutdown()
                 raise PoolUnavailable(str(exc)) from exc
+            last_seen = time.monotonic()
             while True:
                 try:
                     kind, data = self._out_q.get(timeout=1.0)
@@ -186,7 +217,15 @@ class RenderPool:
                     if not self.alive:
                         self.shutdown()
                         raise PoolUnavailable("the render process stopped unexpectedly")
+                    # Alive but silent: a wedged child used to block here forever. Kill it and
+                    # let the caller's inline fallback finish the job.
+                    if time.monotonic() - last_seen > self.stall_timeout:
+                        self.shutdown()
+                        raise PoolUnavailable(
+                            f"the render process stopped responding "
+                            f"(no progress for {self.stall_timeout:.0f} s)")
                     continue
+                last_seen = time.monotonic()
                 if kind == "progress":
                     if progress:
                         progress(data[0], data[1])
@@ -212,6 +251,9 @@ class RenderPool:
             if proc.is_alive():
                 proc.terminate()
                 proc.join(2.0)
+            if proc.is_alive():                      # a wedged child can ignore SIGTERM
+                proc.kill()
+                proc.join(2.0)
 
 
 _POOL: Optional[RenderPool] = None
@@ -224,6 +266,24 @@ def shared_pool() -> RenderPool:
         if _POOL is None:
             _POOL = RenderPool()
         return _POOL
+
+
+def prestart_pool() -> bool:
+    """Start the warm render child early, before the GUI exists.
+
+    The child is started at launch so the first render does not pay its start-up
+    time; with the spawn context this is a re-exec, so it carries no risk of the
+    fork-with-threads deadlock. Never raises: if it cannot start, the caller simply
+    renders inline (``inprocess_forced`` / ``PoolUnavailable``).
+    """
+    if inprocess_forced():
+        return False
+    try:
+        pool = shared_pool()
+        pool.start()
+    except Exception:  # noqa: BLE001 - a child that cannot start is not fatal
+        return False
+    return pool.alive
 
 
 def shutdown_pool() -> None:

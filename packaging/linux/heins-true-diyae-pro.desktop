@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Heins True Diyae Pro
+GenericName=Audio Mastering
+Comment=Offline batch audio mastering and conversion
+Exec=HeinsTrueDiyaePro %f
+Icon=heins-true-diyae-pro
+Terminal=false
+Categories=AudioVideo;Audio;AudioVideoEditing;
+Keywords=mastering;audio;converter;ffmpeg;wav;mp3;flac;
+StartupWMClass=HeinsTrueDiyaePro

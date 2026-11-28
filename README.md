@@ -238,8 +238,28 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Linux only: install PortAudio first (`sudo apt install libportaudio2`); the Windows and
-macOS `sounddevice` packages already include it.
+**Linux (Terminal)**
+
+Use Python 3.11-3.13: PySide6 6.9.x does not support 3.14 yet. The Windows and macOS
+`sounddevice` packages include PortAudio; on Linux it comes from the distribution, along
+with the xcb libraries Qt's platform plugin loads at runtime:
+
+```bash
+# Debian / Ubuntu
+sudo apt install python3-venv libportaudio2 libxcb-cursor0 libxkbcommon-x11-0 libgl1 libegl1
+# Fedora
+sudo dnf install python3.12 portaudio xcb-util-cursor libxkbcommon-x11 libglvnd-egl libglvnd-glx
+
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python main.py
+```
+
+Playback goes through PortAudio to PipeWire / PulseAudio / ALSA. FFmpeg is taken from
+`PATH` or from `/usr/bin`, `/usr/local/bin`, `/snap/bin`. Under Wayland the window runs
+through XWayland; if it opens blank, start it with `QT_QPA_PLATFORM=xcb python main.py`.
 
 **macOS (Terminal)**
 
@@ -272,6 +292,21 @@ build_windows.bat
 bash build_macos.sh
 ```
 
+**Linux (AppImage)**
+
+```bash
+bash build_linux.sh
+```
+
+Result: `dist/HeinsTrueDiyaePro-<version>-x86_64.AppImage`, one file, no install
+step: `chmod +x` it and run it. The script builds the venv and the PyInstaller
+bundle, assembles the AppDir (`packaging/linux/AppRun` +
+`packaging/linux/heins-true-diyae-pro.desktop`, 256x256 icon generated from
+`assets/logo.png`), bundles PortAudio and the xcb libraries Qt needs, then
+downloads `appimagetool` into `.cache/` and builds the image. It needs curl or
+wget the first time. Without FUSE the image still runs:
+`./HeinsTrueDiyaePro-*.AppImage --appimage-extract-and-run`.
+
 Or by hand (after activating the virtual environment shown above):
 
 ```bash
@@ -280,7 +315,8 @@ pyinstaller HeinsTrueDiyaePro.spec --noconfirm --clean
 ```
 
 Result: Windows `dist/HeinsTrueDiyaePro/HeinsTrueDiyaePro.exe` (ship the whole
-`HeinsTrueDiyaePro` folder, e.g. zipped) · macOS `dist/Heins True Diyae Pro.app`.
+`HeinsTrueDiyaePro` folder, e.g. zipped) · macOS `dist/Heins True Diyae Pro.app` ·
+Linux `dist/HeinsTrueDiyaePro-<version>-x86_64.AppImage`.
 The `assets/` folder (logo, mascot), the fallback FFmpeg and the third-party
 notices are bundled. Icon: `assets/logo.ico` / `assets/logo.icns`, or
 `assets/logo.png` converted automatically. On macOS, `build_macos.sh` signs the
@@ -326,7 +362,7 @@ htd/engine/                  no Qt in here
     clip.py                  social clip window, M4A clip, vertical MP4
     export.py                WAV 24 / WAV 16 / MP3 / FLAC / M4A writers
     converter.py             FFmpeg batch conversion
-    ffmpeg_tools.py          FFmpeg discovery for Windows / macOS
+    ffmpeg_tools.py          FFmpeg discovery for Windows / macOS / Linux
     preview.py               16-bit listening files, Gain Match maths
     stereo.py                stereo width / phase / mono-compatibility check
     cut.py                   manual start / end cut (non-destructive, before mastering)
@@ -352,6 +388,8 @@ htd/ui/                      PySide6
     widgets.py, theme.py     reusable widgets, light "white spaceship" style
 build_windows.bat            one-command Windows build
 build_macos.sh               one-command macOS build
+build_linux.sh               one-command Linux AppImage build
+packaging/linux/             AppRun + .desktop entry for the AppImage
 HeinsTrueDiyaePro.spec       PyInstaller recipe
 THIRD_PARTY_NOTICES.md       open-source components, licences, FFmpeg source offer
 LICENSE                      GNU GPL-3.0 (full text)
